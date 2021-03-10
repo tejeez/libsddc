@@ -47,7 +47,9 @@ typedef struct sddc {
   int has_clock_source;
   int has_vhf_tuner;
   int hf_attenuator_levels;
+  int hf_vga_levels;
   double hf_attenuation;
+  int vga_gain;
   double sample_rate;
   double tuner_frequency;
   double tuner_attenuation;
@@ -146,6 +148,15 @@ sddc_t *sddc_open(int index, const char* imagefile)
       this->has_clock_source = 1;
       this->has_vhf_tuner = 1;
       this->hf_attenuator_levels = 3;
+      this->hf_vga_levels = 0;
+      this->frequency_range[0] = 10e3;
+      this->frequency_range[1] = 1750e6;
+      break;
+    case HW_RX888R2:
+      this->has_clock_source = 1;
+      this->has_vhf_tuner = 1;
+      this->hf_attenuator_levels = 64;
+      this->hf_vga_levels = 127;
       this->frequency_range[0] = 10e3;
       this->frequency_range[1] = 1750e6;
       break;
@@ -153,6 +164,7 @@ sddc_t *sddc_open(int index, const char* imagefile)
       this->has_clock_source = 0;
       this->has_vhf_tuner = 0;
       this->hf_attenuator_levels = 32;
+      this->hf_vga_levels = 0;
       this->frequency_range[0] = 0;
       this->frequency_range[1] = 32e6;
       break;
@@ -160,12 +172,14 @@ sddc_t *sddc_open(int index, const char* imagefile)
       this->has_clock_source = 0;
       this->has_vhf_tuner = 0;
       this->hf_attenuator_levels = 0;
+      this->hf_vga_levels = 0;
       this->frequency_range[0] = 0;
       this->frequency_range[1] = 0;
       break;
   }
   this->sample_rate = DEFAULT_SAMPLE_RATE;             /* default sample rate */
   this->hf_attenuation = DEFAULT_HF_ATTENUATION;       /* default HF attenuation */
+  this->hf_vga_gain = 25;			       /* default vga gain code */
   this->tuner_frequency = DEFAULT_TUNER_FREQUENCY;     /* default tuner frequency */
   this->tuner_attenuation = DEFAULT_TUNER_ATTENUATION; /* default gain */
   this->tuner_clock = 0;                               /* tuner off */
@@ -231,6 +245,15 @@ int sddc_set_rf_mode(sddc_t *this, enum RFMode rf_mode)
       if (ret < 0) {
         fprintf(stderr, "ERROR - sddc_set_hf_attenuation() failed\n");
         return -1;
+      }
+
+      /* restore hf vga gain */
+      if (this->hf_vga_levels > 0) {
+	ret = sddc_set_hf_vga_gain(this, this->hf_vga_gain);
+	if (ret < 0) {
+	  fprintf(stderr, "ERROR - sddc_set_hf_vga_gain() failed\n");
+	  return -1;
+	}
       }
 
       break;
@@ -402,11 +425,45 @@ int sddc_set_hf_attenuation(sddc_t *this, double attenuation)
     uint16_t dat31_att = (this->hf_attenuator_levels - 1 - (int) attenuation);
     return usb_device_set_fw_register(this->usb_device, FW_REG_DAT31_ATT,
                                       dat31_att);
-  }
+  } else if (this->hf_attenuator_levels == 64) {
+    /* pe4312 (0.5dB increments) */
+    if (attenuation < 0.0 || attenuation > this->hf_attenuator_levels - 1) {
+      fprintf(stderr, "ERROR - invalid HF attenuation: %lf\n", attenuation);
+      return -1;
+    }
+    this->hf_attenuation = attenuation;
+    uint16_t dat31_att = attenuation;
+    if (attenuation > 0) {
+      dat31_att = dat31_att * 2;
+    }
+    return usb_device_set_fw_register(this->usb_device, FW_REG_DAT31_ATT, dat31_att);
+
 
   /* should never get here */
   fprintf(stderr, "ERROR - invalid number of HF attenuator levels: %d\n",
           this->hf_attenuator_levels);
+  return -1;
+}
+  
+int sddc_set_hf_attenuation(sddc_t *this, int gain)
+{
+  if (this->hf_vga_levels == 0) {
+    /* no vga */
+    return 0;
+  } else if (this->hf_vga_levels == 127) {
+    /* AD8370 */
+    uint8_t gain_code;
+    if (gain > AD4370_GAIN_SWEET_POINT)
+      gain_code = AD4370_HIGH_MODE | (gain - AD4370_GAIN_SWEET_POINT + 3);
+    else
+      gain_code = AD4370_LOW_MODE | (gain + 1);
+    this->hf_vga_gain = gain;
+    return usb_device_get_fw_register(this->usb_device, FW_REG_AD8340_VGA, gain_code);
+  }
+
+  /* should never get here */
+  fprintf(stderr, "ERROR - invalid number of HF vga levels: %d\n",
+          this->hf_vga_levels);
   return -1;
 }
 

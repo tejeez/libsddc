@@ -496,7 +496,7 @@ int usb_device_set_fw_register(usb_device_t *this, uint16_t address,
   if (address >= MAX_FW_REGISTERS) {
     fprintf(stderr, "ERROR - usb_device_set_fw_register() failed - invalid register address: %d\n", address);
   }
-  int ret = usb_device_control(this, SETARGFX3, address, value, 0, 0);
+  int ret = usb_device_control(this, SETARGFX3, value, address, 0, 0);
   if (ret < 0) {
     fprintf(stderr, "ERROR - usb_device_control(SETARGFX3) failed\n");
     return -1;

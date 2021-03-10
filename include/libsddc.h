@@ -65,6 +65,15 @@ enum LEDColors {
   LED_BLUE   = 0x04
 };
 
+/* VGA (AD8340 )*/
+#define AD4370_HIGH_MODE 0x80
+#define AD8340_LOW_MODE 0x00
+#define AD8340_GAIN_SWEET_POINT 18
+  
+  /*
+#define HIGH_GAIN_RATIO (0.409f)
+#define LOW_GAIN_RATIO (0.059f)
+  */
 
 /* basic functions */
 int sddc_get_device_count();
