@@ -1,6 +1,7 @@
 # libsddc - A low level library for wideband SDR receivers
 
-A library and a few simple applications for wideband SDR receivers like BBRF103, RX-666, RX888, HF103, etc
+A library and a few simple applications for wideband SDR receivers like BBRF103, RX-666, RX888, HF103, etc.
+(experimental support for RX888MKII added by JI3GAB)
 
 **IMPORTANT: the development of this library has now become part of Oscar's ExtIO_sddc project: https://github.com/ik1xpv/ExtIO_sddc - since the Linux code in that repository is not yet fully functional, I am keeping this version around for now in order to provide an option for Linux users to be able to stream samples from the RX888**
 
