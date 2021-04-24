@@ -49,7 +49,7 @@ typedef struct sddc {
   int hf_attenuator_levels;
   int hf_vga_levels;
   double hf_attenuation;
-  int vga_gain;
+  int hf_vga_gain;
   double sample_rate;
   double tuner_frequency;
   double tuner_attenuation;
@@ -179,7 +179,7 @@ sddc_t *sddc_open(int index, const char* imagefile)
   }
   this->sample_rate = DEFAULT_SAMPLE_RATE;             /* default sample rate */
   this->hf_attenuation = DEFAULT_HF_ATTENUATION;       /* default HF attenuation */
-  this->hf_vga_gain = 25;			       /* default vga gain code */
+  this->hf_vga_gain = 0x25;			       /* default vga gain code */
   this->tuner_frequency = DEFAULT_TUNER_FREQUENCY;     /* default tuner frequency */
   this->tuner_attenuation = DEFAULT_TUNER_ATTENUATION; /* default gain */
   this->tuner_clock = 0;                               /* tuner off */
@@ -314,7 +314,7 @@ enum FWRegAddresses {
   FW_REG_R82XX_SIDEBAND   = 0x03,  /* R8xx sideband - {0,1} */
   FW_REG_R82XX_HARMONIC   = 0x04,  /* R8xx harmonic - {0,1} */
   FW_REG_DAT31_ATT        = 0x0a,  /* DAT-31 att - range: 0-63 */
-  FW_REG_AD8340_VGA       = 0x0b,  /* AD8340 chip vga - range: 0-255 */
+  FW_REG_AD8370_VGA       = 0x0b,  /* AD8370 chip vga - range: 0-127 */
   FW_REG_PRESELECTOR      = 0x0c   /* preselector - range: 0-2 */
 };
 
@@ -399,18 +399,18 @@ int sddc_set_hf_attenuation(sddc_t *this, double attenuation)
     /* old style attenuator with just 0dB, 10dB, and 20Db */
     uint16_t bit_pattern = 0;
     switch ((int) attenuation) {
-      case 0:
-        bit_pattern = GPIO_ATT_SEL1;
-        break;
-      case 10:
-        bit_pattern = GPIO_ATT_SEL0 | GPIO_ATT_SEL1;
-        break;
-      case 20:
-        bit_pattern = GPIO_ATT_SEL0;
-        break;
-      default:
-        fprintf(stderr, "ERROR - invalid HF attenuation: %lf\n", attenuation);
-        return -1;
+    case 0:
+      bit_pattern = GPIO_ATT_SEL1;
+      break;
+    case 10:
+      bit_pattern = GPIO_ATT_SEL0 | GPIO_ATT_SEL1;
+      break;
+    case 20:
+      bit_pattern = GPIO_ATT_SEL0;
+      break;
+    default:
+      fprintf(stderr, "ERROR - invalid HF attenuation: %lf\n", attenuation);
+      return -1;
     }
     this->hf_attenuation = attenuation;
     return usb_device_gpio_set(this->usb_device, bit_pattern,
@@ -422,43 +422,45 @@ int sddc_set_hf_attenuation(sddc_t *this, double attenuation)
       return -1;
     }
     this->hf_attenuation = attenuation;
-    uint16_t dat31_att = (this->hf_attenuator_levels - 1 - (int) attenuation);
+    uint16_t dat31_att = (int) attenuation;
     return usb_device_set_fw_register(this->usb_device, FW_REG_DAT31_ATT,
                                       dat31_att);
   } else if (this->hf_attenuator_levels == 64) {
     /* pe4312 (0.5dB increments) */
-    if (attenuation < 0.0 || attenuation > this->hf_attenuator_levels - 1) {
+    if (attenuation < 0.0 || attenuation > 31.5) {
       fprintf(stderr, "ERROR - invalid HF attenuation: %lf\n", attenuation);
       return -1;
     }
     this->hf_attenuation = attenuation;
-    uint16_t dat31_att = attenuation;
-    if (attenuation > 0) {
-      dat31_att = dat31_att * 2;
-    }
-    return usb_device_set_fw_register(this->usb_device, FW_REG_DAT31_ATT, dat31_att);
-
-
+    uint16_t pe4312_att = attenuation * 2;
+    return usb_device_set_fw_register(this->usb_device, FW_REG_DAT31_ATT, pe4312_att);
+  }
   /* should never get here */
   fprintf(stderr, "ERROR - invalid number of HF attenuator levels: %d\n",
-          this->hf_attenuator_levels);
+	  this->hf_attenuator_levels);
   return -1;
 }
-  
-int sddc_set_hf_attenuation(sddc_t *this, int gain)
+
+/* gain code (0 to 127) */
+/* 0dB:0x10, 10dB:0x17, 20dB:0x25, 30dB:0x5d */
+int sddc_set_hf_vga_gain(sddc_t *this, int idx)
 {
   if (this->hf_vga_levels == 0) {
     /* no vga */
     return 0;
   } else if (this->hf_vga_levels == 127) {
+    if (idx < 0 || idx > 127) {
+      fprintf(stderr, "ERROR - invalid HF vga gain idx: %d\n", idx);
+      return -1;
+    }
     /* AD8370 */
     uint8_t gain_code;
-    if (gain > AD4370_GAIN_SWEET_POINT)
-      gain_code = AD4370_HIGH_MODE | (gain - AD4370_GAIN_SWEET_POINT + 3);
+    if (idx > AD8370_GAIN_SWEET_POINT)
+      gain_code = AD8370_HIGH_MODE | (idx - AD8370_GAIN_SWEET_POINT + 3);
     else
-      gain_code = AD4370_LOW_MODE | (gain + 1);
-    this->hf_vga_gain = gain;
-    return usb_device_get_fw_register(this->usb_device, FW_REG_AD8340_VGA, gain_code);
+      gain_code = AD8370_LOW_MODE | (idx + 1);
+    this->hf_vga_gain = idx;
+    return usb_device_set_fw_register(this->usb_device, FW_REG_AD8370_VGA, gain_code);
   }
 
   /* should never get here */

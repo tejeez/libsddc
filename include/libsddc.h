@@ -65,10 +65,10 @@ enum LEDColors {
   LED_BLUE   = 0x04
 };
 
-/* VGA (AD8340 )*/
-#define AD4370_HIGH_MODE 0x80
-#define AD8340_LOW_MODE 0x00
-#define AD8340_GAIN_SWEET_POINT 18
+/* VGA (AD8370)*/
+#define AD8370_HIGH_MODE 0x80
+#define AD8370_LOW_MODE 0x00
+#define AD8370_GAIN_SWEET_POINT 18
   
   /*
 #define HIGH_GAIN_RATIO (0.409f)
@@ -123,6 +123,8 @@ int sddc_set_adc_random(sddc_t *this, int random);
 double sddc_get_hf_attenuation(sddc_t *this);
 
 int sddc_set_hf_attenuation(sddc_t *this, double attenuation);
+  
+int sddc_set_hf_vga_gain(sddc_t *this, int idx);
 
 int sddc_get_hf_bias(sddc_t *this);
 
