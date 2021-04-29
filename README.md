@@ -17,6 +17,8 @@ NOTICE: this library expects the SDR to be running firmware 1.01 or above; for f
 
 The firmware directory contains Oscar Steila's firmware for convenience. The source code for the firmware is here: https://github.com/ik1xpv/ExtIO_sddc/tree/master/SDDC_FX3
 
+The firmware binary in the repository is from here:
+https://groups.io/g/NextGenSDRs/message/241
 
 ## Credits
 
