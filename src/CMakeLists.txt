@@ -28,6 +28,8 @@ add_executable(sddc_stream_test sddc_stream_test.c wavewrite.c)
 target_link_libraries(sddc_stream_test sddc)
 add_executable(sddc_vhf_stream_test sddc_vhf_stream_test.c wavewrite.c)
 target_link_libraries(sddc_vhf_stream_test sddc)
+add_executable(sddc_stream sddc_stream.c)
+target_link_libraries(sddc_stream sddc)
 
 
 # install
@@ -35,6 +37,6 @@ install(TARGETS sddc
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-install(TARGETS sddc_test sddc_stream_test sddc_vhf_stream_test
+install(TARGETS sddc_test sddc_stream_test sddc_vhf_stream_test sddc_stream
   DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
