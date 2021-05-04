@@ -89,6 +89,11 @@ int main(int argc, char **argv)
     goto DONE;
   }
 
+  if (sddc_set_hf_attenuation(sddc, 0) < 0) {
+    fprintf(stderr, "ERROR - sddc_set_hf_attenuation failed\n");
+    goto DONE;
+  }
+
   /* TODO - double check */
   if (sddc_set_hf_bias(sddc, 1) < 0) {
     fprintf(stderr, "ERROR - sddc_set_hf_bias failed\n");
