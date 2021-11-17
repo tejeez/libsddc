@@ -65,8 +65,13 @@ int main(int argc, char **argv)
   SDDC_CHECK(sddc_set_async_params, sddc, 0, 0, stream_callback, sddc);
   SDDC_CHECK(sddc_set_rf_mode, sddc, HF_MODE);
   SDDC_CHECK(sddc_set_hf_attenuation, sddc, 0);
-  /* 1 disables the bias-T on RX888, 0 enables */
-  SDDC_CHECK(sddc_set_hf_bias, sddc, 1);
+  /* 1 disabled the bias-T on RX888, 0 enabled,
+   * at least on the older firmware.
+   * On RX888 mkII, it seems to be the other way around.
+   * The difference might also be due to the newer firmware,
+   * so it should still be tested on the original RX888 as well.
+   */
+  SDDC_CHECK(sddc_set_hf_bias, sddc, 0);
 
   SDDC_CHECK(sddc_start_streaming, sddc);
   fprintf(stderr, "started streaming ..\n");
